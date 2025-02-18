@@ -1,0 +1,61 @@
+:root {
+    --background: #0A174E;
+    --dark: #303032;
+    --liquid: #006eff;
+  }
+  
+  .card {
+    position: relative;
+    background: var(--dark);
+    border: 0.25rem solid var(--dark);
+    height: 8rem;
+    width: 8rem;
+    outline: 0;
+    overflow: hidden;
+    box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
+  }
+  
+  .card::before {
+    height: 100%;
+    width: 100%;
+    color:    #0A174E !important; /* Change to your desired final color */;
+    font-size: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Default animation (not active) */
+  .card::after {
+    content: "";
+    position: absolute;
+    bottom: -50%;
+    left: -50%;
+    height: 200%;
+    width: 200%;
+    background-color: var(--background);
+    /*background-color: #0044cc; /* Final background color */
+    border-radius: 35%;
+    animation: none; /* No animation when not active */
+  
+  }
+  
+  .active-card {
+    background-color: #F5D042 !important; /* Final color */
+    position: relative;
+    overflow: hidden;
+}
+  /* Apply animation when card is active (props.disp === true) */
+  .active-card::after {
+    animation: spin 0.6s ease-in forwards;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: translateY(0) rotate(0deg);
+    }
+    100% {
+      transform: translateY(-100%) rotate(400deg);
+    }
+  }
+  
