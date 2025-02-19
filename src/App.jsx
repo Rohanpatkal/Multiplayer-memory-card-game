@@ -89,7 +89,6 @@ function App()
   );
 }
 export default App;
-*/
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from "@supabase/supabase-js";
@@ -202,7 +201,7 @@ function App() {
   return (
     <>
       <div className="d-flex justify-content-between p-3" style={{ background: "#2D2926" }}>
-        {/* Player 1 UI (Left) */}
+        {/* Player 1 UI (Left) 
         <div className="text-center text-white">
           <h2>Player 1</h2>
           <h3>Win: {gameState.playerScores[1]}</h3>
@@ -210,7 +209,7 @@ function App() {
         
         <button className='fw-bolder fs-5 btn btn-dark p-3 text-white border border-2 border-black' style={{ background: "#0063B2" }} onClick={() => setArr()}>Generate game</button>
 
-        {/* Player 2 UI (Right) */}
+        {/* Player 2 UI (Right) 
         <div className="text-center text-white">
           <h2>Player 2</h2>
           <h3>Win: {gameState.playerScores[2]}</h3>
@@ -223,6 +222,162 @@ function App() {
         <div className="row g-0 align-items-stretch p-auto">
           {gameState.a.map((e, i) => (
             <div key={i} className="col col-sm-3 d-flex justify-content-center" onClick={() => handleIndex(i)} style={{ cursor: "pointer" }}>
+              <Card value={e} disp={i === gameState.fIndex || i === gameState.sIndex || gameState.win.includes(i)} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+export default App;
+*/
+import React, { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import "./App.css";
+import Card from "./components/Card";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
+
+const SUPABASE_URL = "https://vticpysfvablhzzcyffm.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0aWNweXNmdmFibGh6emN5ZmZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NjkwOTEsImV4cCI6MjA1NTU0NTA5MX0.MCI8olYGVLXDVyE4SUcF3tNpc2CISHVoY7DTgzfp4nc";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const GAME_ID = 1;
+
+function App() {
+  const [gameState, setGameState] = useState({
+    a: [10, 20, 30, 40, 50, 60, 10, 20, 30, 40, 50, 60, 70, 70, 80, 80],
+    fIndex: null,
+    sIndex: null,
+    win: [],
+    playerScores: { 1: 0, 2: 0 },
+    currentPlayer: 1,
+    gameOver: false,
+    winner: null,
+  });
+
+  useEffect(() => {
+    async function fetchGameState() {
+      let { data } = await supabase.from("games").select("state").eq("id", GAME_ID).single();
+      if (data) setGameState(data.state);
+    }
+    fetchGameState();
+
+    const subscription = supabase
+      .channel("game_updates")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "games" }, (payload) => {
+        setGameState(payload.new.state);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
+
+  async function updateGameState(newState) {
+    setGameState(newState);
+    await supabase.from("games").update({ state: newState }).eq("id", GAME_ID);
+  }
+
+  function setArr() {
+    let shuffled = [...gameState.a].sort(() => Math.random() - 0.5);
+    let newState = {
+      ...gameState,
+      a: shuffled,
+      win: [],
+      playerScores: { 1: 0, 2: 0 },
+      currentPlayer: 1,
+      gameOver: false,
+      winner: null,
+      fIndex: null,
+      sIndex: null,
+    };
+    updateGameState(newState);
+  }
+
+  function handleIndex(index) {
+    if (gameState.gameOver || gameState.win.includes(index)) return;
+
+    let newState = { ...gameState };
+
+    if (gameState.fIndex === null) {
+      newState.fIndex = index;
+    } else if (gameState.sIndex === null && gameState.fIndex !== index) {
+      newState.sIndex = index;
+
+      if (gameState.a[gameState.fIndex] === gameState.a[index]) {
+        newState.win = [...gameState.win, gameState.fIndex, index];
+        newState.playerScores[gameState.currentPlayer] += 1;
+        newState.fIndex = null;
+        newState.sIndex = null;
+      } else {
+        newState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+
+        updateGameState(newState);
+
+        setTimeout(() => {
+          updateGameState({ ...newState, fIndex: null, sIndex: null });
+        }, 1000);
+        return;
+      }
+    }
+
+    if (newState.win.length === newState.a.length) {
+      determineWinner(newState);
+    }
+
+    updateGameState(newState);
+  }
+
+  function determineWinner(state) {
+    let winner =
+      state.playerScores[1] > state.playerScores[2]
+        ? "Player 1 Wins! 🏆"
+        : state.playerScores[2] > state.playerScores[1]
+        ? "Player 2 Wins! 🏆"
+        : "It's a Draw! 🤝";
+
+    updateGameState({ ...state, gameOver: true, winner });
+  }
+
+  return (
+    <>
+      <div className="d-flex justify-content-between p-3" style={{ background: "#2D2926" }}>
+        <div className="text-center text-white">
+          <h2>Player 1</h2>
+          <h3>Win: {gameState.playerScores[1]}</h3>
+        </div>
+
+        <button
+          className="fw-bolder fs-5 btn btn-dark p-3 text-white border border-2 border-black"
+          style={{ background: "#0063B2" }}
+          onClick={() => setArr()}
+        >
+          Generate game
+        </button>
+
+        <div className="text-center text-white">
+          <h2>Player 2</h2>
+          <h3>Win: {gameState.playerScores[2]}</h3>
+        </div>
+      </div>
+
+      <h2 className="text-center text-white">Current Player: {gameState.currentPlayer}</h2>
+
+      {gameState.gameOver && <h2 className="text-center text-warning">{gameState.winner}</h2>}
+
+      <div className="container text-center w-50">
+        <div className="row g-0 align-items-stretch p-auto">
+          {gameState.a.map((e, i) => (
+            <div
+              key={i}
+              className="col col-sm-3 d-flex justify-content-center"
+              onClick={() => handleIndex(i)}
+              style={{ cursor: "pointer" }}
+            >
               <Card value={e} disp={i === gameState.fIndex || i === gameState.sIndex || gameState.win.includes(i)} />
             </div>
           ))}
